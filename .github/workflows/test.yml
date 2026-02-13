@@ -1,0 +1,27 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        maven: [ '3.8.8', '3.9.8' ]
+
+    name: Maven ${{ matrix.maven }} sample
+
+    steps:
+
+      - name: Setup Maven Action
+        uses: s4u/setup-maven-action@v1.19.0
+        with:
+          java-version: 11
+          maven-version: ${{ matrix.maven }}
+
+      - run: mvn test
