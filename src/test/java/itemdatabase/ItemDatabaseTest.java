@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -34,7 +35,7 @@ public class ItemDatabaseTest extends FluentTest {
     public void canAddItem() {
         addItem();
     }
-    
+
     @Ignore
     @Test
     public void canAddMultipleItems() {
