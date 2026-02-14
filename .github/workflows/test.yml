@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        maven: [ '3.8.8', '3.9.8' ]
+        maven: [ '3.9.8' ]
 
     name: Maven ${{ matrix.maven }} sample
 
@@ -25,3 +25,18 @@ jobs:
           maven-version: ${{ matrix.maven }}
 
       - run: mvn test
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker image
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: kaikatajisto/item-database:latest
