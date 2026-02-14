@@ -40,3 +40,23 @@ jobs:
           context: .
           push: true
           tags: kaimichaelkatajisto/item-database:latest
+          
+      - name: Deploy to CSC Server via SSH
+        if: github.event_name != 'pull_request'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.CSC_HOST }}
+          username: ${{ secrets.CSC_USERNAME }}
+          key: ${{ secrets.CSC_SSH_KEY }}
+          script: |
+            # Siirry kansioon, jossa docker-compose.yml sijaitsee
+            cd /itembase-harjoitus
+            
+            # Lataa uusin kuva Docker Hubista
+            docker compose pull
+            
+            # Käynnistä kontit uudelleen uudella kuvalla
+            docker compose up -d
+            
+            # (Valinnainen) Poista vanhat turhat imaget tilaa viemästä
+            docker image prune -f
