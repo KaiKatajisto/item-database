@@ -11,10 +11,3 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
-# Buildausohjeet:
-# docker build -t spring-hello .
-# Kontin ajaminen:
-# docker run -p 8080:8080 spring-hello
-# Sovelluksen testaaminen selaimessa:
-# http://localhost:8080/
