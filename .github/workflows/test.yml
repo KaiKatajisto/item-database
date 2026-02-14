@@ -1,4 +1,4 @@
-name: Java CI with Maven
+name: Java CI with Maven :)
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
           context: .
           push: true
           tags: kaimichaelkatajisto/item-database:latest
-          
+
       - name: Deploy to CSC Server via SSH
         if: github.event_name != 'pull_request'
         uses: appleboy/ssh-action@master
