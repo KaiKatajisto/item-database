@@ -1,0 +1,732 @@
+Harjoitustyö README.
+
+Johdanto:
+
+Tässä README:ssä kuvailen vaihe-vaiheelta kuinka olen toteuttanut harjoitustyön.
+Oletan, että lukijalla on valmiina: GitHub, Docker & CSC-Palvelin.
+
+Menin: github.com/new
+Loin uuden projektin: ohjelmistotuotanto-harjoitus
+Repositoryn asetukset: Public, Add a README, Add .gitignore (java, tämä estää turhien käännöstiedostojen joutumisen repoon)
+
+Teknologiat mitä käytän: Spring Boot, PostgreSQL, Java 17.
+
+Menin: https://start.spring.io/ (luon uuden spring initializerin)
+Project: Maven
+Language: Java
+Springboot: 3.5.10 (uudempi saattaa vaatia java 21)
+
+Metadata: 
+Group: com.example
+Artifact: ohjelmistotuotanto-harjoitus
+Name: ohjelmistotuotanto-harjoitus
+Package name: com.example.ohjelmistotuotanto-harjoitus
+Packaging: Jar
+Configuration: Properties
+Java: 17
+
+Dependencies:
+Spring Web 		(RESTful API)
+Spring Data JPA 	(Tietokannan käsittelyyn)
+PostgreSQL Driver 	(Tietokantayhteys)
+Lombok 			(Vähentää koodin määrää)
+Validation 		(Syötteiden tarkistus)
+Spring Boot Actuator	(OPS)
+
+Paina Generate, aloittaa automaattisen latauksen.
+
+Lataa github reposi haluamaasi kansioon: git clone https://github.com/KaiKatajisto/ohjelmistotuotanto-harjoitus.git
+
+Lisää lataamasi Spring_Init.zip tänne ja pura se (varmista että purat vain sisällön. Älä luo uutta alihakemistoa, pom.xml pitää löytyä juuresta esim. (ohjelmistotuotanto-harjoitus/pom.xml)
+
+Palataan terminaaliin ja pusketaan gittiin:
+
+	cd ohjelmistotuotanto-harjoitus
+	git add .
+	git commit -m "Initial commit: Spring Boot 3.5.10 skeleton"
+	git push
+
+Kansion ja sen tiedostojen pitäisi nyt olla github repossasi: https://github.com/KaiKatajisto/ohjelmistotuotanto-harjoitus.git
+
+Jos sait varoituksia 'LF will be replaced by CRLF' ne ovat täysin normaaleja Windowsilla (Git muuntaa Linux-tyyliset rivinvaihdot Windows-tyylisiksi), eikä niistä tarvitse välittää.
+
+Seuraavaksi laitan konfiguraatiot ja tietokannan (paikallinen) kuntoon, joten voin käynnistää sovelluksen.
+Kansiopolusta: C:\Users\Omistaja\OneDrive - Epedu O365\SeAMK 2026 Kevät\Ohjelmistotuotannon jatkokurssi\Harjoitustyö\ohjelmistotuotanto-harjoitus\src\main\resources
+
+Löytyy: application.properties; poistan sen, jotta voin käyttää .yml-tiedoston.
+Luon uuden tiedoston samaan paikkaan "application.yml" - päätiedosto joka määrittää oletusasetukset. Profiili on 'dev'
+
+Oletusasetukset tulevat olemaan:
+
+
+spring:
+  application:
+    name: ohjelmistotuotanto-harjoitus
+  profiles:
+    active: dev
+
+
+Luon sitten 'application-dev.yml' - Paikalliseen kehitykseen tarkoitettu profiili:
+
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/harjoitusdb
+    username: harjoitususer
+    password: harjoituspassword
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect # Yrittää yhdistää PostgreSQL.
+    hibernate:
+      ddl-auto: update # Luo taulut automaattisesti, jos ne puuttuvat
+    show-sql: true # Näyttää SQL-kyselyt konsolissa (hyvä kehityksessä)
+
+
+Seuraavaksi luon 'application-test.yml' - Tämä on selvästi testaukseen tarkoitettu profiili. Käyttää H2-muistikantaa.
+
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password: sa
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop # Tyhjentää kannan testien jälkeen
+
+
+Nyt voin luoda vielä viimeisen profiilin: 'application-prod.yml' - Eli siis tuotannon (csc), salasanat ja käyttäjätunnukset haetaan ympäristömuuttujina, joten  en vie niitä githubiin.
+
+spring:
+  datasource:
+    # Nämä arvot ylikirjoitetaan palvelimella ympäristömuuttujilla
+    url: jdbc:postgresql://db:5432/proddb
+    username: ${PROD_DB_USER}
+    password: ${PROD_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+Jotta application-dev.yml toimisi, tarvitsemme PostgreSQL-tietokannan.
+Siirrytään juureen, ja luodaan docker-compose.yml:
+
+
+services:
+  # Tietokantapalvelu paikalliseen kehitykseen
+  db:
+    image: postgres:15-alpine
+    container_name: harjoitus-db
+    environment:
+      POSTGRES_DB: harjoitusdb
+      POSTGRES_USER: harjoitususer
+      POSTGRES_PASSWORD: harjoituspassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+
+Käyttäjätunnus ja salasana täsmäävät application-dev.yml -tiedoston kanssa.
+
+
+Nyt voin testata lähteekö kaikki käyntiin.
+
+docker compose up -d
+
+Jos käynnistäminen onnistui ilman ongelmia, juoksee se nyt taustalla. (-d = detached, eli laitetaan juoksemaan taustalle)
+
+Voin nyt testata spring-boot sovellusta, juoksutan terminaalissa:
+
+Linux:
+./mvnw spring-boot:run
+
+Windows:
+mvnw spring-boot:run
+
+Nyt tekstiä pitäisi näkyä paljon (vilisee.fi) ja sovellus käynnistyy.
+
+Huom. sovellus vaatii JDK 17, se löytyy esim: https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.10_7.msi
+Muista lisätä "Set JAVA_HOME variable" niin, että siinä ei ole punaista ruksia, vaan että se on valittuna "Will be installed on local hard drive".
+
+JOS joudut asentamaan Java JDK 17, muista uudelleen käynnistää VSC (tai mikälie editori) ja käynnistää uusiksi terminaali. Tarkista versio "java --version", pitäisi näkyä JDK 17 jne jne. Kokeile uusiksi: mvnw spring-boot:run, pitäisi käynnistyä. Jos ei käynnisty, idk.
+
+Sovellus on nyt käynnissä portissa 8080: http://localhost:8080
+Huom, sivu on vielä "Whitelabel Error Page", mutta pystyssä joka tapauksessa.
+
+Koska määrittelimme Spring Initializr:ssä Actuator OPS-kirjaston, on myös osoite http://localhost:8080/actuator käytössä. Pitäisi löytyä yksinkertaista JSON-muotoista dataa.
+
+Tehdään yksinkertainen Hello World rajapinta. Pysäytä palvelin terminaalista.
+Mene kansioon: C:\Users\Omistaja\OneDrive - Epedu O365\SeAMK 2026 Kevät\Ohjelmistotuotannon jatkokurssi\Harjoitustyö\ohjelmistotuotanto-harjoitus\src\main\java\com\example\ohjelmistotuotanto_harjoitus
+
+Luodaan tänne yksinkertainen controlleri: 'TestController.java'.
+
+Sisällöksi:
+
+
+package com.example.ohjelmistotuotanto_harjoitus;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class TestController {
+
+    @GetMapping("/")
+    public String home() {
+        return "Tervehdys! Spring Boot toimii ja kehitysympäristö on kunnossa.";
+    }
+}
+
+
+Käynnistä sovellus uudestaan terminaalissa: mvnw spring-boot:run
+localhost:8080, pitäisi nyt näyttää asettamasi teksti.
+
+mvnw spring-boot:run
+
+Muista, jos terminaalissa näkyy: 2026-02-13T20:58:33.394+02:00  INFO 3352 --- [ohjelmistotuotanto-harjoitus] [           main] o.OhjelmistotuotantoHarjoitusApplication : Started OhjelmistotuotantoHarjoitusApplication in 2.797 seconds (process running for 3.081)
+
+Eli "Started OhjelmistotuotantoHarjoitusApplication in 2.797 seconds ..."
+On sovellus käynnistynyt onnistuneesti.
+
+Localhost:8080 pitäisi näkyä asettamasi teksti. "Tervehdys! Spring Boot toimii ja kehitysympäristö on kunnossa." eikä juuri mitään muuta.
+
+Nyt sinulla on kehitysympäristö: Dockerissa on päällä tietokanta ja Spring Boot juttelee sen kanssa.
+
+Eli siis: Kun ajoimme docker compose up -d - docker teki asiat docker-compose.yml-tiedoston perusteella:
+Se latasi internetistä Postgre: 15-alpine. Käynnisti imagen. "Porttiohjauksen" Port Mapping - Tietokanta kontin sisällä kuuntelee porttia 5432. docker-compose.yml sisällä on rivi: ports: - "5432:5432", tämä tarkoittaa, että kontin SISÄINEN portti kuuntelee porttia 5432 ja kytkee sen Windows-isäntäkoneen (tai linux) porttiin 5432.
+
+Eli nyt spring-boot, joka on kontin ulkopuolella windowsin puolella, pääsee portin 5432 kautta käsiksi dockerin sisällä sijaitsevaan konttiin (postgre).
+
+Kun juoksutin mvnw spring-boot:run, seuraavat asiat tapahtuivat ketjussa:
+Javan virtuaalikone käynnistyi. Spring luki profiilit 'application.yml' ja näki 'active: dev'. Tämän jälkeen spring latasi 'application-dev.yml' -tiedoston ja luki sen asetukset. Spring myös näki pom.xml, missä on riippuvuuden (postgresql) ja latasi ajurin joka keskustelee PostgreSQL:n kanssa.
+
+Spring lukee konfiguraatio osoitteen: jdbc:postgresql://localhost:5432/harjoitusdb, eli protoclla on Postgresql. Host on localhost (tämä kone). Portti: 5432. Tietokanta/database: harjoitusdb.
+
+Nyt spring avaa TCP/IP-verkkoyhteyden annettuun Hostiin ja Porttiin: localhost:5432, eli portti mikä on auki dockkeriin.
+Pyyntö vastaanotetaan dockerissa ja siirretään kontin sisälle. PostgreSQL-prosessi kontin sisällä herää, koska määritelty käyttäjä "harjoitususer" on ottamassa yhteyttä. Se myös tarkistaa määritellyn salasanan "harjoituspassword". Jos tiedot täsmäävät toistensa kanssa, se vastaa.
+
+Spring Boot ei katkaise yhteyttä, linja jää auki. Nyt voimme tallentaa ja lukea dataa SQL-komennoilla.
+
+Mistä tiedän, että kontti ja windows sovellus kommunikoivat? JOS salasana olisi väärin tai Docker-kontti ei vastaisi, sovellus kaatuisi välittömästi punaiseen virheeseen (Connection refused tai Authentication failed).
+
+Mutta, koska olen itsekin skeptinen ihminen, tehdään todiste, eli minimaalinen REST API.
+
+Siirryn taas kansioon: C:\Users\Omistaja\OneDrive - Epedu O365\SeAMK 2026 Kevät\Ohjelmistotuotannon jatkokurssi\Harjoitustyö\ohjelmistotuotanto-harjoitus\src\main\java\com\example\ohjelmistotuotanto_harjoitus
+
+Täälä luon taulun "Note.java":
+
+
+package com.example.ohjelmistotuotanto_harjoitus;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Note {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String content;
+}
+
+
+Tämä on HYVIN yksinkertainen tietokanta taulu.
+
+Nyt luon yhteyspalikan. Rajapinta mikä käsittelee SQL-komennot.
+Sama kansio, mutta tiedosto on "NoteRepository.java":
+
+
+package com.example.ohjelmistotuotanto_harjoitus;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface NoteRepository extends JpaRepository<Note, Long> {
+}
+
+
+Päivitetään myös hieman TestController.java:aa minkä loin aiemmin, että oikeasti tallennamme ja haemme tietoa:
+
+
+package com.example.ohjelmistotuotanto_harjoitus;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+public class TestController {
+
+    @Autowired
+    private NoteRepository noteRepository;
+
+    // Hakee kaikki muistiinpanot tietokannasta
+    @GetMapping("/")
+    public List<Note> getNotes() {
+        return noteRepository.findAll();
+    }
+
+    // Tallentaa uuden muistiinpanon tietokantaan
+    @PostMapping("/")
+    public Note addNote(@RequestBody String content) {
+        Note note = new Note();
+        note.setContent(content);
+        return noteRepository.save(note);
+    }
+}
+
+
+Nyt pystymme todistamaan, että spring-boot juttelee postgre:n kanssa, mikä on dockerin virtuaalikoneella.
+Käynnistetään sovellus uudestaan: mvnw spring-boot:run
+
+Käynnistyksen yhteydessä, terminaalin loppupäästä löytyy: "Hibernate: create table note (id bigint generated by default as identity, content varchar(255), primary key (id))" - Spring boot siis loi taulun tietokantaan.
+
+Nyt kun käy osoitteessa localhost:8080 - on sielä tyhjä taulu.
+
+Kokeillaan puskea dataa postgre tietokantaan joka sijaitsee dockerissa.
+
+Avaa uusi terminaali, älä sulje vanhaa.
+
+Tämä ei pakosta toimi, ja terminaali saattaa jäätyä. Kokeile kuitenkin CTRL-C ja katso mitä se antaa:
+curl -X POST -H "Content-Type: text/plain" -d "Tämä menee tietokantaan! curl_test!" http://localhost:8080/
+
+Jos ensimmäinen keino ei onnistu, kokeile:
+curl.exe -X POST -H "Content-Type: text/plain" -d "Tämä menee tietokantaan. curl.exe_test!" http://localhost:8080/
+
+Pitäisi näyttää tältä, tuloste pitäisi olla sisältö:
+
+C:\Users\Omistaja>curl.exe -X POST -H "Content-Type: text/plain" -d "Tämä menee kantaan!" http://localhost:8080/
+
+{"id":4,"content":"Tämä menee kantaan!"}
+
+Myös spring-bootin terminaaliin pitäisi tulla näkyviin:
+
+"Hibernate: insert into note (content) values (?)"
+
+http://localhost:8080/ pitäisi nyt näkyä yksinkertaista JSON-dataa:
+
+[  
+  {
+    "id": 1,
+    "content": "Tämä menee kantaan!"
+  }
+]
+
+Onneksi olkoon, lähetit dataa windowsilta dockerissa sijaitsevaan postgre-tietokantaan. :-)
+
+Käydään vielä tiedostot lävitse, että kaikki on itsestään selvää:
+Note.java: eli siis Entity. Tämä tiedosto itsessään ei tee mitään. Näyttää miltä datan pitäisi näyttää.
+Se kommunikoi Hibernate (springin sisäinen apuri) kanssa ja käskee sitä luomaan SQL-taulun annotaatioiden avulla:
+
+Esim. '@Entity' -> 'public class Note'= Luo taulu jonka nimi on: 'note'
+      '@Id' -> Tämä muuttuja (private Long id;) on PrimaryKey
+      '@GeneratedValue(strategy = GenerationType.IDENTITY) -> 'Postgre, luo automaattinen arvo id:lle'
+      'private String content -> Tämä on "sarake" pöydän sisällä.
+
+NoteRepository.java - ns. tulkki:
+
+Tämä on 'Interface'. Ei koodia, pelkkä määrittely.
+Tämä toimii tulkkina Javan ja SQL:n välillä. Luodaan lennossa käynnistyksen yhteydessä.
+
+Esim. 'extends JpaRepository<Note, Long>' -> 'Javalla on Note ja se tyyppiä Long (numero).
+
+TestController.java - Kontrolleri - Hallintakeskus:
+'@Autowired private NoteRepository noteRepository'
+Täälä tapahtuu paljon Dependency Injection (DI) ja se on hieman abstraktoitua.
+Spring Boot etsii käynnistyksessä luomansa Repository-olion ja "tiputtaa" sen tähän muuttujaan. Ilman tätä riviä yhteys tietokantaan puuttuisi tästä tiedostosta.
+
+getNotes() -funktio:
+Kun selain kutsuu osoitetta /, tämä funktio herää.
+Se huutaa repositorylle: "Anna kaikki!" (findAll()).
+Repository hakee datan Postgresta -> muuttaa SQL-tulokset Java-olioiksi (List<Note>) -> Controller palauttaa ne JSON-muodossa selaimelle.
+
+addNote(@RequestBody String content) -funktio:
+@RequestBody: Koppaa dataa HTTP-pyynnön "vartalosta" (body).
+Tässä tapauksessa se ottaa tekstin ("Tämä menee tietokantaan!").
+
+Note note = new Note();: Luodaan uusi "kuljetuslaatikko" (Olio).
+note.setContent(content);: Laitetaan teksti laatikkoon.
+repository.save(note);: Annetaan laatikko Repository:lle, joka tallentaa sen PostgreSQL.
+
+Koska määritin application-dev.yml:
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/harjoitusdb
+
+Osaa spring-boot automaattisesti lähettää tiedon localhost:5432 (mikä on auki sekä windows että linux) docker ottaa sen koppi.
+
+"NoteRepository tietää lähettää datan JDBC-putkeen, koska Spring Boot "injektoi" (eli antaa) sille valmiin tietokantayhteyden heti kun sovellus käynnistyy" Tämä on sitä spring-boot asiaa.
+
+Nyt kun on olemassa sovellus ja tietokanta, voidaan siirtyä itse asiaan: DevOps-automatioon
+
+Luodaan siis GitHubiin ohjeet millä se herää käyntiin aina kun koodiin tehdään muutoksia. esim "git push".
+Ohjeet (virtuaalikone käynnistyy) ja lataa koodin, kääntää sen ja ajaa testit, ettei mikää hajonnut (esim. vanha koodi)
+
+Tallenna kaikki koodi mitä olet kirjoittanut GitHub repoosi.
+Terminaalissa:
+	git add .
+	git commit -m "Tietoyhteys ja REST API valmis."
+	git push
+
+Luodaan CI-putki (Continuous Integration):
+
+Luo .github/workflows
+
+mkdir .github
+cd .github
+mkdir workflows
+cd workflows
+
+Tee tänne (workflows) main.yml:
+
+
+name: CI/CD Pipeline
+
+# Milloin robotti herää?
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 1. Hae koodi repositoriosta
+    - uses: actions/checkout@v4
+    
+    # 2. Asenna Java 17 (sama kuin koneellasi)
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+
+    # 3. Anna suoritusoikeudet Maven-wrapperille (tärkeä Linux-ympäristössä)
+    - name: Grant execute permission for mvnw
+      run: chmod +x mvnw
+
+    # 4. Aja testit käyttäen 'test'-profiilia
+    # Tämä käyttää application-test.yml -tiedostoa ja H2-tietokantaa
+    - name: Run Tests
+      run: ./mvnw test
+      env:
+        SPRING_PROFILES_ACTIVE: test
+
+
+Tämä on resepti, jota GitHubin palvelimet noudattavat.
+"SPRING_PROFILES_ACTIVE: test" selitettynä: 
+"Koska GitHubin virtuaalikoneella ei ole Docker-PostgreSQL:ää käynnissä (kuten sinun omalla koneellasi on),
+meidän täytyy käyttää application-test.yml-tiedostossa määriteltyä H2-tietokantaa. Se on "muistissa" toimiva tietokanta, joka ei vaadi asennuksia."
+
+Voimme nyt puskea workflows reseptin githubiin.
+
+git add .
+git commit -m "ci: Lisätty GitHub Actions workflow testaukselle"
+git push
+
+Nyt näemme, toimiiko automaatio.
+
+Mene selaimeen GitHub-repositorioosi.
+
+Klikkaa yläpalkista välilehteä Actions.
+
+Sinun pitäisi nähdä listassa uusin suoritus otsikolla "ci: Lisätty GitHub Actions workflow testaukselle".
+
+Testi luultavasti epäonnistuu, koska en määritellyt pom.xml tiedostoon h2-tietokantaa. Voit lisätä sinne <dependencies> sisälle: 
+
+<dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <scope>test</scope>
+</dependency>
+
+Tämä muutos pom.xml:llään varmistaa, että Java löytää 'org.h2.Driver' -luokan, joka on määritelty 'application-test.yml' -tiedostossa.
+
+Lisätään myös kansiopolussa: C:\Users\Omistaja\OneDrive - Epedu O365\SeAMK 2026 Kevät\Ohjelmistotuotannon jatkokurssi\Harjoitustyö\ohjelmistotuotanto-harjoitus\src\test\java\com\example\ohjelmistotuotanto_harjoitus
+
+Sijaitsevaan 'OhjelmistotuotantoHarjoitusApplicationTests.java' tiedostoon:
+
+
+<muut importit>
+import org.springframework.test.context.ActiveProfiles; <-- Tämä
+
+@SpringBootTest <-- Älä poista
+@ActiveProfiles("test") <-- Tämä
+<muu koodi>
+
+
+Kun GitHub ajaa testin, tämä rivi pakottaa Spring Bootin lukemaan 'application-test.yml' -tiedoston. Siellä olemme määrittäneet 'jdbc:h2:mem...', eli sovellus luo tietokannan omaan muistiinsa eikä yritä turhaan etsiä PostgreSQL-yhteyttä, jota ei ole olemassa GitHubin omalla virtuaalikoneella.
+
+Voidaan vielä kerran puskea uudet muutokset githubiin ja miettiä mitä tuli tehdyksi.
+
+git add .
+git commit -m "fix: Lisätty H2-riippuvuus ja @ActiveProfiles testiin"
+git push
+
+Katso Actions välilehteä ja katso kun se suoriutuu onnistuneesti.
+
+Muista aina tarkistella main.yml:llää githubissa:
+https://github.com/KaiKatajisto/ohjelmistotuotanto-harjoitus/actions/workflows/main.yml
+
+Vihreä pallo GitHubissa tarkoittaa, että Continuous Integration (CI) -osuus toimii. 
+Nyt ohjeesi tai "robottisi" osaa hakea koodin ja varmistaa, ettei se ole rikki.
+
+Voidaan siirtyä Continuous Delivery (CD):
+
+Gemini said
+Onnittelut! 🎉 Vihreä pallo GitHubissa tarkoittaa, että Continuous Integration (CI) -osuus toimii. Nyt "robottisi" osaa hakea koodin ja varmistaa, ettei se ole rikki.
+
+Seuraava vaihe on Continuous Delivery (CD): Koodin paketointi ja julkaisu.
+
+Teemme nyt niin, että GitHub Actions rakentaa automaattisesti Docker-imagen ja lähettää sen Docker Hubiin.
+Sieltä CSC:n palvelin voi myöhemmin ladata sen.
+
+GitHub tarvitsee ohjeet sovelluksen paketoimiseen, siihen tarkoitukseen käytetään Dockerfileä.
+
+Mene projektin juureen ja luo 'Dockerfile', lisää sinne:
+
+
+# Vaihe 1: Käytetään pohjana Java 17 -imagea (sama kuin kehityksessä)
+FROM eclipse-temurin:17-jdk-alpine
+
+# Lisätään metadataa (hyvä tapa)
+LABEL maintainer="sinun.sähköposti@example.com"
+
+# Luodaan tilapäinen levyalue (Spring Bootin optimointi)
+VOLUME /tmp
+
+# Kopioidaan käännetty JAR-tiedosto kontin sisään ja nimetään se app.jar:ksi
+COPY target/*.jar app.jar
+
+# Kerrotaan, että sovellus kuuntelee porttia 8080
+EXPOSE 8080
+
+# Määritellään komento, jolla sovellus käynnistyy
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+
+Jotta GitHub Actions saa luvan lähettää ("push") tavaraa Docker Hub -tilille, meidän pitää antaa sille avaimet.
+Älä koskaan kirjoita salasanaa koodiin! 
+Käytämme GitHubin salaisuuksia (Secrets).
+
+Mene app.docker.com (kirjautuminen vaaditaan, duh).
+https://app.docker.com/accounts/kaikatajisto
+
+" https://docs.docker.com/security/access-tokens/
+Sign in to Docker Home.
+Select your avatar in the top-right corner and from the drop-down menu select Account settings.
+Select Personal access tokens.
+Select Generate new token.
+Configure your token:
+Description: Use a descriptive name that indicates the token's purpose
+Expiration date: Set an expiration date based on your security policies
+Access permissions: Read, Write, or Delete.
+Select Generate. Copy the token that appears on the screen and save it. You won't be able to retrieve the token once you exit the screen.
+"
+
+Kopioi pitkä merkkijono talteen NYT. Et näe sitä enää toista kertaa.
+{ DOCKER_TOKEN_HERE }
+
+Nyt voidaan viedä salaisuus GitHubiin ja "New repository secret":
+
+https://github.com/KaiKatajisto/ohjelmistotuotanto-harjoitus/settings/secrets/actions
+
+Lisää kaksi salaisuutta: DOCKER_USERNAME ja DOCKER_PASSWORD.
+DOCKER_USERNAME = docker käyttäjätunnus, ei sähköposti, minulla esim. kaikatajisto
+DOCKER_PASSWORD = Access token jonka loit dockerissa.
+
+Päivitetään nyt GitHub Actions -putki (main.yml) tekemään työtä.
+
+Päivitetään main.yml:
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Grant execute permission for mvnw
+      run: chmod +x mvnw
+
+    # 1. Aja testit (Varmistetaan että koodi toimii)
+    - name: Run Tests
+      run: ./mvnw test
+      env:
+        SPRING_PROFILES_ACTIVE: test
+
+    # 2. Paketoi sovellus (Luo .jar tiedoston target-kansioon)
+    - name: Build Application JAR
+      run: ./mvnw package -DskipTests
+
+    # 3. Kirjaudu Docker Hubiin (Käyttää tallentamiasi salaisuuksia)
+    - name: Log in to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # 4. Rakenna Docker-image ja lähetä se (Push)
+    - name: Build and Push Docker image
+      if: github.event_name != 'pull_request'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: kaikatajisto/ohjelmistotuotanto-harjoitus:latest
+
+
+Nyt main.yml rakentaa JAR-tiedoston (mvn package). Aiemmin ajoimme vain testit.
+Nyt meidän pitää luoda se fyysinen tiedosto, jonka Docker kopioi sisäänsä
+ja rakentaa ja lähettää Docker-imagen: Käyttäen sinun tunnuksiasi.
+
+Voimme taas päivittää githubin ja katsoa ilmestyykö sovellus dockeriin. MUISTA Dockerfile pitää olla JUURESSA.
+
+git add .
+git coomit -m "ci: Lisätty Docker build ja push -vaiheet"
+git push
+
+Jos githubissa vihreää, kaikki meni hyvin. Tarkista Docker Hubista, että sielä on image.
+https://hub.docker.com/repositories/kaikatajisto
+https://hub.docker.com/repository/docker/kaikatajisto/ohjelmistotuotanto-harjoitus/general
+Täälä pitäisi näkyä "latest"
+
+Olen nyt toteuttanut CI. Enää jäljellä CD -> Continuous Delivery, eli paketin vieminen palvelimelle.
+Jos se saadaan tehtyä, on koko CI/CD ketju valmis.
+
+Avaa CSC palvelin terminaalissa: ssh -i .\Testi.pem ubuntu@195.148.20.136 (huom. oma avaimesi on eri kuin minun ja IP yms.)
+
+Tehdään sinne kansio ja siirrytään sen sisään:
+	mkdir ohjelmistotuotanto-harjoitus
+	cd ohjelmistotuotanto-harjoitus
+
+Luodaan docker-compose.yml:
+	nano docker-compose.yml
+
+Huomaa: käytämme nyt kaikatajisto-imagea ja prod-profiilia
+
+
+services:
+  app:
+    image: kaikatajisto/ohjelmistotuotanto-harjoitus:latest
+    container_name: harjoitus-app
+    restart: always
+    ports:
+      - "80:8080" # Ohjaa internetin portin 80 sovelluksen porttiin 8080
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - PROD_DB_USER=produser
+      - PROD_DB_PASSWORD=SuperSalainenProdSalasana123! # Tämän voi vaihtaa
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    container_name: harjoitus-db-prod
+    restart: always
+    environment:
+      POSTGRES_DB: proddb
+      POSTGRES_USER: produser
+      POSTGRES_PASSWORD: SuperSalainenProdSalasana123!
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_prod_data:
+
+
+Tallenna ja kokeile juoksuttaa docker:
+	sudo docker compose up -d
+
+Muista, sinulla saattaa olla vanha nginx taustalla (niin kuin minulla oli)
+Sen voi sammuttaa:
+	sudo systemctl stop nginx
+Ja että se ei käynnisty uudestaan:
+	sudo systemctl disable nginx
+
+Pahimmassa tapauksessa vanha sovellus on vallannut vieläkin portin. Joten voit pysäyttää sen ja poistaa.
+	sudo docker stop demo
+	sudo docker rm demo
+	sudo docker compose up -d --force-recreate
+
+Tarkista tilanne sudo docker ps ja vieraile IP-osoitteessasi: http://195.148.20.136/
+Täälä pitäisi nyt näkyä tyhjä pöytä JSON-dataa.
+
+Jos portti 80 ei ole auki Security Groupeissa CSC-palvelimella:
+
+"Avaa portti 80 CSC:n hallintapaneelista
+Tee nämä vaiheet selaimellasi (ei SSH-yhteydessä):
+Kirjaudu sisään: https://pouta.csc.fi/dashboard/project/
+Valitse vasemmalta valikosta: Network -> Security Groups.
+Etsi listasta se ryhmä, joka on liitetty virtuaalikoneeseesi (usein nimeltään default tai olet ehkä luonut oman).
+Vinkki: Jos et ole varma, mene Compute -> Instances, katso koneesi tiedot ja sieltä kohta "Security Groups".
+Klikkaa ryhmän nimeä tai Manage Rules.
+Klikkaa Add Rule.
+Täytä tiedot:
+Rule: HTTP (tai valitse Custom TCP Rule).
+Direction: Ingress (Sisääntuleva liikenne).
+Open Port: Port
+Port: 80 (jos kysytään rangea, laita 80-80).
+Remote: CIDR
+CIDR: 0.0.0.0/0 (Tämä tarkoittaa: "Salli yhteys kaikkialta maailmasta").
+Klikkaa Add."
+
+Jos selain aukeaa ja sielä on tyhjä lista [] - kaikki meni niin kuin piti.
+Voit testata lisätä sinne dataa Windowsin kautta:
+curl.exe -X POST -H "Content-Type: text/plain" -d "Terveisiä CSC-pilvestä!" http://195.148.20.136/
+
+Päivitä selain ja tiedon pitäsi olla sielä.
+
+[
+  {
+    "id": 1,
+    "content": "Terveisiä CSC-pilvestä!"
+  }
+]
+
+That's a wrap.
+Se, että näen selaimessa hakasulut [], tarkoittaa, että kaikki toimii.
+Yhteys toimii: Pääsin palomuurin läpi.
+Web-palvelin toimii: Docker otti pyynnön vastaan portissa 80.
+Koodi toimii: Spring Boot vastasi HTTP 200 OK.
+Tietokanta toimii: Sovellus kysyi tietokannalta "anna kaikki muistiinpanot", ja tietokanta vastasi rehellisesti: "Täällä ei ole vielä mitään" (eli tyhjä lista [], paiti sen jälkeen kun lisäsin dataa windowsilta käsin).
+
+Toteutus putki: Koodi koneellasi -> GitHub -> CI/CD -> Docker Hub -> CSC cPouta -> Internet
