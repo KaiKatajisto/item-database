@@ -19,4 +19,13 @@ public class ItemDatabaseController {
         return "index";
     }
 
+    @PostMapping("/")
+    public String add(@RequestParam String name) {
+        Item item = new Item();
+        item.setName(name);
+        
+        this.itemRepository.save(item); // Tallennus PostgreSQL:ään
+        
+        return "redirect:/"; // Ohjaus takaisin listaukseen (GET-pyyntö)
+    }
 }

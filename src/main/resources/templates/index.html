@@ -1,27 +1,31 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
     <head>
-        <title>Item Database - Testaus</title>
+        <meta charset="UTF-8" />
+        <title>Item Database</title>
+        <style>
+            body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; }
+            ul { list-style-type: none; padding: 0; }
+            li { background: #f4f4f4; margin: 5px 0; padding: 10px; border-radius: 4px; }
+            input[type="text"] { padding: 8px; width: 70%; }
+            input[type="submit"] { padding: 8px; width: 25%; background: #28a745; color: white; border: none; cursor: pointer; }
+        </style>
     </head>
-
     <body>
-        <h1>Item Database</h1>
 
-        <table>
-            <tr>
-                <th>Items</th>
-            </tr>
+        <h1>Items list</h1>
 
-            <tr th:each="item : ${items}">
-                <td th:text="${item.name}">Item name</td>
-            </tr>
-        </table>
+        <ul>
+            <li th:each="item : ${items}">
+                <span th:text="${item.name}">Item Name</span>
+            </li>
+        </ul>
 
-        <h2>Add an item</h2>
+        <hr/>
 
+        <h2>Add new item</h2>
         <form th:action="@{/}" method="POST">
-            <span>Name:</span>
-            <input type="text" name="name"/>
+            <input type="text" name="name" placeholder="Enter item name" required="required"/>
             <input type="submit" value="Add!"/>
         </form>
     </body>
