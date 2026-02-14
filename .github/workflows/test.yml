@@ -50,7 +50,7 @@ jobs:
           key: ${{ secrets.CSC_SSH_KEY }}
           script: |
             # Siirry kansioon, jossa docker-compose.yml sijaitsee
-            cd /itembase-harjoitus
+            cd /home/ubuntu/itembase-harjoitus
             
             # Lataa uusin kuva Docker Hubista
             docker compose pull
