@@ -1,4 +1,5 @@
 ## Tekijä: Kai Katajisto TITE23 - Ohjelmistotuotannon Jatkokurssi
+Feat. Hanna Tammela TITE22
 
 # Item Database Application
 
