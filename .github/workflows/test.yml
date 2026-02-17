@@ -28,13 +28,7 @@ jobs:
 
       - name: Run Tests (Non-blocking)    # Luodaan oma lohko testaukselle, niin se on helposti eroteltavissa.
         run: mvn test                     # Tämä laukaisee test\java\itemdatabase\ItemDatabaseTest.java:n.
-        continue-on-error: true           # Tehdään testit, vaikka ne epäonnistuvat, jatketaan. (muista poistaa @Ignore ItemDatabaseTest.java:sta)
-
-      - name: Publish Test Report                               # Näytetään helposti raportti epäonnistuneista yksikkötesteistä.
-        uses: mikepenz/action-junit-report@v4                   # Communityn rakentama testien prosessointi Actioni (testaan uteliaisuuttani).
-        if: always()                                            # Näytetään aina, onnistui tai epäonnistui.
-        with:
-          report_paths: '**/target/surefire-reports/TEST-*.xml'
+        continue-on-error: false          # true: Tehdään testit, vaikka ne epäonnistuvat, jatketaan. (muista poistaa @Ignore ItemDatabaseTest.java:sta), MUUTIN false, koske testit onnistuvat.
 
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'
