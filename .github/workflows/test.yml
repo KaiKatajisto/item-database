@@ -1,4 +1,4 @@
-name: Java CI with Maven :)
+name: Java CI with Maven
 
 on:
   push:
@@ -17,6 +17,8 @@ jobs:
     name: Maven ${{ matrix.maven }} sample
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.19.0
@@ -24,8 +26,15 @@ jobs:
           java-version: 11
           maven-version: ${{ matrix.maven }}
 
-      - run: mvn test # Tämä laukaisee test\java\itemdatabase\ItemDatabaseTest.java:n.
-        continue-on-error: true  # Tehdään testit, vaikka ne epäonnistuvat, jatketaan. (muista poistaa @Ignore ItemDatabaseTest.java:sta)
+      - name: Run Tests (Non-blocking)    # Luodaan oma lohko testaukselle, niin se on helposti eroteltavissa.
+        run: mvn test                     # Tämä laukaisee test\java\itemdatabase\ItemDatabaseTest.java:n.
+        continue-on-error: true           # Tehdään testit, vaikka ne epäonnistuvat, jatketaan. (muista poistaa @Ignore ItemDatabaseTest.java:sta)
+
+      - name: Publish Test Report                               # Näytetään helposti raportti epäonnistuneista yksikkötesteistä.
+        uses: mikepenz/action-junit-report@v4                   # Communityn rakentama testien prosessointi Actioni (testaan uteliaisuuttani).
+        if: always()                                            # Näytetään aina, onnistui tai epäonnistui.
+        with:
+          report_paths: '**/target/surefire-reports/TEST-*.xml'
 
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'
