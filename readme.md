@@ -97,7 +97,7 @@ Projektin laadunvarmistus perustuu automaattisiin testeihin.
 
 **Eristäminen:** `@ActiveProfiles("test")` -annotaatio varmistaa, että testit käyttävät väliaikaista H2-tietokantaa.
 
-**Poisluku:** Yksikkötestit tietynlaiselle sovellukselle poistettu `@Ignore` -annotaatiolla, kaatumisen estämiseksi.
+**Yksikkötestit:** Yksikkötestit voimassa. Molemmat 'canAddItem()' ja 'canAddMultipleItems()' suoriutuu onnistuneesti.
 
 ## CI/CD-putki
 

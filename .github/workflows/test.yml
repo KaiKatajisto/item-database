@@ -28,7 +28,7 @@ jobs:
 
       - name: Run Tests (Blocking)        # Luodaan oma lohko testaukselle, niin se on helposti eroteltavissa. Uudelleen nimetty, koska nyt: continue-on-error: false.
         run: mvn test                     # Tämä laukaisee test\java\itemdatabase\ItemDatabaseTest.java:n.
-        continue-on-error: false          # true: Tehdään testit, vaikka ne epäonnistuvat, jatketaan. (muista poistaa @Ignore ItemDatabaseTest.java:sta), MUUTIN false, koske testit onnistuvat.
+        continue-on-error: false          # true: Tehdään testit, vaikka ne epäonnistuvat, jatketaan, false: kaikki pysäytetään.
 
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'
